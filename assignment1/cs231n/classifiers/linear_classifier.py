@@ -26,6 +26,7 @@ class LinearClassifier(object):
     Outputs:
     A list containing the value of the loss function at each training iteration.
     """
+    # print X.shape
     num_train, dim = X.shape
     num_classes = np.max(y) + 1 # assume y takes values 0...K-1 where K is number of classes
     if self.W is None:
@@ -49,7 +50,7 @@ class LinearClassifier(object):
       # Hint: Use np.random.choice to generate indices. Sampling with         #
       # replacement is faster than sampling without replacement.              #
       #########################################################################
-      index = np.random.choice(num_train, batch_size, replace = False)
+      index = np.random.choice(num_train, batch_size, replace = True)
       X_batch = X[index]
       y_batch = y[index]
       
@@ -96,8 +97,8 @@ class LinearClassifier(object):
     ###########################################################################
     y_pred = np.argmax(X.dot(self.W),axis=1)
     
-    print 'y_pred.shape'
-    print y_pred.shape
+    # print 'y_pred.shape'
+    # print y_pred.shape
     ###########################################################################
     #                           END OF YOUR CODE                              #
     ###########################################################################

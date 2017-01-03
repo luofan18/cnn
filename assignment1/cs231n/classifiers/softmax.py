@@ -29,7 +29,52 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  num_train = X.shape[0]
+  num_class = W.shape[1]
+  
+  if False:
+    for i in xrange(num_train):
+      X_i =  X[i]
+      score_i = X_i.dot(W)
+      stability = -score_i.max()
+      exp_score_i = np.exp(score_i+stability)
+      exp_score_total_i = np.sum(exp_score_i , axis = 0)
+      for j in xrange(num_class):
+        if j == y[i]:
+          dW[:,j] += -X_i.T + (exp_score_i[j] / exp_score_total_i) * X_i.T
+        else:
+          dW[:,j] += (exp_score_i[j] / exp_score_total_i) * X_i.T
+      numerator = np.exp(score_i[y[i]]+stability)
+      denom = np.sum(np.exp(score_i+stability),axis = 0)
+      loss += -np.log(numerator / float(denom))
+  
+  else:
+    for i in xrange(num_train):
+      score = X[i].dot(W)
+      
+      # shift the score 
+      logC = - np.max(score)
+      score_shift = score + logC
+      
+      # take the exponential
+      score_shift = np.exp(score_shift)
+
+      prob = np.exp(score_shift) / np.sum(np.exp(score_shift))
+      loss += - np.log(prob[y[i]])
+      
+      for j in xrange(num_class):
+        if j == y[i]:
+          dW[:,j] += - ((1 - prob[y[i]]) * X[i]).T
+        else:
+          dW[:,j] += (prob[j] * X[i]).T
+        
+  dW /= num_train
+  dW += reg * W
+  
+  
+  loss /= num_train
+  
+  loss += 0.5 * reg * np.sum(W * W)
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -53,7 +98,29 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  num_train = X.shape[0]
+  num_class = W.shape[1]
+  
+  score = X.dot(W)
+  logC = -score.max(axis = 1)
+  
+  score_shift = score + logC.reshape((-1,1))
+  score_shift = np.exp(score_shift)
+  prob = score_shift / np.sum(score_shift, axis = 1).reshape((-1,1))
+  
+  loss = np.sum( - np.log( prob[range(num_train), y]))
+  
+  # print prob[range(num_train), y]
+  # print prob[range(num_train), y].shape
+  
+  loss /= num_train
+  loss += reg * np.sum(W * W)
+  
+  prob[range(num_train), y] -= 1
+  dW += prob.T.dot(X).T
+  dW /= num_train
+  dW += reg * W
+  
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
