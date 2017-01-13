@@ -135,7 +135,42 @@ class CaptioningRNN(object):
     # defined above to store loss and gradients; grads[k] should give the      #
     # gradients for self.params[k].                                            #
     ############################################################################
-    pass
+    # forward pass
+    cache = {}
+    
+    # initial hidden state
+    h0, cache['img2vec'] = affine_forward(features, W_proj, b_proj)
+    
+    # word2vec
+    word_vec, cache['word2vec'] = word_embedding_forward(captions_in, W_embed)
+    
+    if self.cell_type == 'rnn':
+      out, cache['rnn'] = rnn_forward(word_vec, h0, Wx, Wh, b)
+    elif self.cell_type == 'lstm':
+      out, cache['lstm'] = lstm_forward(word_vec, h0, Wx, Wh, b)
+      
+    # output word
+    scores, cache['out'] = temporal_affine_forward(out, W_vocab, b_vocab)
+    
+    loss, grad = temporal_softmax_loss(scores, captions_out, mask)
+    
+    # backword pass
+    # word output layer
+    grad, grads['W_vocab'], grads['b_vocab'] = \
+                                  temporal_affine_backward(grad, cache['out'])
+    
+    # rnn layer
+    if self.cell_type == 'rnn':
+      grad, dh0, grads['Wx'], grads['Wh'], grads['b'] = \
+                                  rnn_backward(grad, cache['rnn'])
+    elif self.cell_type == 'lstm':
+      grad, dh0, grads['Wx'], grads['Wh'], grads['b'] = \
+                                  lstm_backward(grad, cache['lstm'])      
+    # word2vec
+    grads['W_embed'] = word_embedding_backward(grad, cache['word2vec'])
+    
+    # img2vec
+    _, grads['W_proj'], grads['b_proj'] = affine_backward(dh0, cache['img2vec'])
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -197,7 +232,44 @@ class CaptioningRNN(object):
     # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
     # a loop.                                                                 #
     ###########################################################################
-    pass
+    # feed image
+    h0, _ = affine_forward(features, W_proj, b_proj)
+    
+    # feed the start
+    start = np.tile(self._start, (N,1))
+    word2vec, _ = word_embedding_forward(start, W_embed)
+    
+    if self.cell_type == 'rnn':
+      # rnn
+      h = {}
+      h[0], _ = rnn_step_forward(word2vec, h0, Wx, Wh, b)
+    elif self.cell_type == 'lstm':
+      h = {}
+      c = {}
+      H = Wh.shape[0]
+      c0 = np.zeros((N, H))
+      h[0], c[0], _ = lstm_step_forward(word2vec, h0, c0, Wx, Wh, b)
+    
+    if False:
+      import pdb
+      pdb.set_trace()
+    # word out
+    score, _ = affine_forward(h[0], W_vocab, b_vocab)
+    
+    # select word
+    captions[:,0] = score.argmax(axis=1)
+    
+    # latter word
+    for t in range(1, max_length):
+      word2vec, _ = word_embedding_forward(captions[:,t-1], W_embed)
+      if self.cell_type == 'rnn':
+        h[t], _ = rnn_step_forward(word2vec, h[t-1], Wx, Wh, b)
+      elif self.cell_type == 'lstm':
+        h[t], c[t], _ = lstm_step_forward(word2vec, h[t-1], c[t-1], Wx, Wh, b)
+      
+      score, _ = affine_forward(h[t], W_vocab, b_vocab)
+      captions[:,t] = score.argmax(axis=1)
+    
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
