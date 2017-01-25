@@ -1,3 +1,2 @@
 # cnn
-assignment
-# This is my finished assigment of cs231n
+# This is my finished assigment of cs231n Convolutional neural network
