@@ -141,3 +141,6 @@ $RECYCLE.BIN/
 # compress package
 *.zip
 .zip
+
+# image data
+*.jpg
