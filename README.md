@@ -1,4 +1,4 @@
 # cnn
-# This is assigment of cs231n Convolutional neural network
+# Assigments of cs231n Convolutional Neural Networks for Visual Recognition
 
-Syllabus refer to http://cs231n.github.io/
+Course site and syllabus at http://cs231n.github.io/
